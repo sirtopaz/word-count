@@ -8,17 +8,51 @@
 
   <link rel="stylesheet" href="https://bootswatch.com/flatly/bootstrap.min.css">
   <style>
+
+    body {
+      background-size: contain;
+      background: #CFCFCF url(http://www.ericavandergraaf.nl/v1site_images/backgrounds/grey-background-hd-564.jpg) center fixed;
+    }
     header {
-      position: fixed;
-      height: 48px;
+      background: rgba(255, 255, 255, .25);
+      /*text-shadow: 1px 1px 2px rgba(255, 255, 255, .8);*/
+    }
+
+    main {
+      position: relative;
+      height: 90vh;
+    }
+
+    #form-container, #chart-container {
+      position: absolute;
       top: 0;
       left: 0;
+      right: 0;
+      bottom: 0;
+      opacity: 0;
     }
-    main {
-      padding: 48px 0;
+
+
+    main.form-view #form-container {
+      opacity: 1;
     }
+
+    main.form-view #chart-container {
+      z-index: -1;
+    }
+
+    main.chart-view #chart-container {
+      opacity: 1;
+    }
+
+    main.chart-view #form-container {
+      z-index: -1
+    }
+
     footer {
+      background: rgba(255, 255, 255, .25);
       position: fixed;
+      width: 100%;
       height: 48px;
       bottom: 0;
       left: 0;
@@ -28,26 +62,131 @@
 </head>
 
 <body>
-  <header>
-    <h1> Word Count Demo </h1>
+  <header class="container-fluid">
+    <div class="pageheader">
+      <h1> Word Count Demo </h1>
+    </div>
   </header>
-  <main class="app-container form-view">
-    <section id="form-container" class="input-form container full-view">
-      <h2>Form Goes Here</h2>
+  <main class="app-container form-view container">
+    <section id="form-container" class="input-form full-view row">
+      <div class="col-sm-12 col-md-8">
+        <form class="form-horizontal">
+          <fieldset>
+            <div class="form-group">
+              <h2><label for="text-holder" class="control-label">Enter Text</label></h2>
+              <textarea id="text-holder" class="form-control" rows="20"></textarea>
+            </div>
+            <div class="form-group">
+              <button type="button" id="count-button" class="btn btn-primary">Count 'em</button>
+            </div>
+          </fieldset>
+        </form>
+      </div>
     </section>
-    <section id='chart-container' class="chart container full-view">
-      <h2>Chart Goes Here</h2>
+    <section id="chart-container" class="chart full-view row">
+      <div class="col-sm-12">
+        <h2>Count of Words</h2>
+      </div>
+      <div class="col-sm-8">
+        <svg id="word-count-chart" height="480" width="640" viewBox="0 0 640 480">
+          <rect x="0" y="0" height="480" width="640" fill="blue" />
+        </svg>
+      </div>
+      <div class="col-sm-12"><button type="button" id="reset-button" class="btn btn-primary">Start Over</button></div>
     </section>
   </main>
-  <footer>
-    <sm class='copyright'>&copy;2015 copyright Sean Gervais</sm>
-    <sm class='download'>Download source</sm>
+  <footer class="container-fluid">
+    <div class="row">
+      <div class="col-sm-5 col-sm-offset-1"><sm class="copyright">&copy;2015 copyright Sean Gervais</sm></div>
+      <div class="col-sm-5 col-sm-offset-1"><sm class="download">Download source</sm></div>
+    </div>
   </footer>
 
   <!-- SCRIPTS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
   <script>
     //normally this would go into included JS file
+
+    var MIN_WORD_SIZE = 0;
+    var MAX_NUM_WORDS = 25;
+
+    (function(){
+      "use strict";
+
+
+      function setup() {
+        d3.select("#count-button").on('click', handleCountClick)
+        d3.select("#reset-button").on('click', handleResetClick)
+      }
+
+      function handleCountClick() {
+        d3.select(".form-view").classed({'form-view': false, 'chart-view': true})
+
+        updateCountChart();
+      }
+
+      function handleResetClick() {
+        d3.select(".chart-view").classed({'chart-view': false, 'form-view': true})
+      }
+
+
+      function getWordKeys(wordList) {
+        return wordList.reduce( function(wordKeys, word, idx){
+            var wordKey = word.toLowerCase()
+            var item = wordKeys.map[wordKey] || false
+            var parent = null
+
+            if (item) {
+              item.count ++
+              parent = item.parent
+
+              if (item.count > parent.count)
+                item.parent = parent.parent;
+                parent.parent = item;
+
+                if (!item.parent)
+                  wordKeys.heap = item
+
+            } else {
+              item = {
+                key: wordKey,
+                count: 1,
+                parent: wordKeys.last
+              };
+
+              wordKeys.map[wordKey] = item;
+              wordKeys.last = item;
+
+              if (idx === 0)
+                wordKeys.heap = item;
+
+            }
+
+            return wordKeys;
+
+          },
+          {heap:null, map:{} , last: null }
+        );
+
+      }
+
+      function updateCountChart() {
+        var text = d3.select("#text-holder").property("value");
+        var cleaned = text.replace(/[^\w\s]|_/g, "").replace(/\s+/g, " ");
+        var wordList = cleaned.split(" ");
+        var wordKeys = getWordKeys(wordList)
+
+
+        alert(wordKeys.heap.key);
+
+      }
+
+
+
+      setup();
+    })()
+
+
 
   </script>
 
