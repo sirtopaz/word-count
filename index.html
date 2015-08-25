@@ -88,11 +88,11 @@
         <h2>Count of Words</h2>
       </div>
       <div class="col-sm-8">
-        <svg id="word-count-chart" height="480" width="640" viewBox="0 0 640 480">
-          <rect x="0" y="0" height="480" width="640" fill="blue" />
+        <svg id="word-count-chart" height="960" width="960" viewBox="0 0 960 960">
+          <rect x="0" y="0" height="960" width="960" fill="white" />
         </svg>
       </div>
-      <div class="col-sm-12"><button type="button" id="reset-button" class="btn btn-primary">Start Over</button></div>
+      <div class="col-sm-4"><button type="button" id="reset-button" class="btn btn-primary">Start Over</button></div>
     </section>
   </main>
   <footer class="container-fluid">
@@ -129,7 +129,6 @@
         d3.select(".chart-view").classed({'chart-view': false, 'form-view': true})
       }
 
-
       function getWordKeys(wordList) {
         return wordList.reduce( function(wordKeys, word, idx){
             var wordKey = word.toLowerCase()
@@ -140,45 +139,83 @@
               item.count ++
               parent = item.parent
 
-              if (item.count > parent.count)
+              if (parent && (item.count > parent.count)) {
                 item.parent = parent.parent;
                 parent.parent = item;
-
-                if (!item.parent)
-                  wordKeys.heap = item
-
+              }
             } else {
               item = {
                 key: wordKey,
                 count: 1,
-                parent: wordKeys.last
+                firstIdx: idx,
+                included: (wordKey.length > MIN_WORD_SIZE),
+                parent: wordKeys.heap
               };
 
               wordKeys.map[wordKey] = item;
-              wordKeys.last = item;
+              wordKeys.heap = item;
 
               if (idx === 0)
                 wordKeys.heap = item;
-
             }
 
             return wordKeys;
-
           },
-          {heap:null, map:{} , last: null }
+          {heap:null, map:{}}
         );
 
+      }
+
+      function flatten(wordKeys) {
+        var words = [];
+
+        function recurse(node) {
+          if (!node)
+            return
+
+          if (node.parent)
+            recurse(node.parent)
+
+          if (node.included && (words.length < MAX_NUM_WORDS))
+            words.push({packageName: node.key, className: node.key, value: node.count});
+        }
+
+        recurse(wordKeys.heap);
+        return {children: words};
       }
 
       function updateCountChart() {
         var text = d3.select("#text-holder").property("value");
         var cleaned = text.replace(/[^\w\s]|_/g, "").replace(/\s+/g, " ");
         var wordList = cleaned.split(" ");
-        var wordKeys = getWordKeys(wordList)
+        var wordKeys = getWordKeys(wordList);
+        var data = flatten(wordKeys);
 
+        var diameter = 960, format = d3.format(",d"), color = d3.scale.category20c();
+        var bubble = d3.layout.pack()
+            .sort(null)
+            .size([diameter, diameter])
+            .padding(1.5);
 
-        alert(wordKeys.heap.key);
+        var svg = d3.select("#word-count-chart");
 
+        var node = svg.selectAll(".node")
+          .data(bubble.nodes(data).filter( function(d) { return !d.children; }))
+          .enter().append("g")
+          .attr("class", "node")
+          .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+
+        node.append("title")
+            .text(function(d) { return "Word Count: " + format(d.value); });
+
+        node.append("circle")
+            .attr("r", function(d) { return d.r; })
+            .style("fill", function(d) { return color(d.value); });
+
+        node.append("text")
+            .attr("dy", ".3em")
+            .style("text-anchor", "middle")
+            .text(function(d) { return d.className.substring(0, d.r / 3); });
       }
 
 
