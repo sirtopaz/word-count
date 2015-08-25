@@ -50,7 +50,7 @@
     }
 
     footer {
-      background: rgba(255, 255, 255, .25);
+      background: rgba(0, 0, 0, .25);
       position: fixed;
       width: 100%;
       height: 48px;
@@ -98,7 +98,7 @@
   <footer class="container-fluid">
     <div class="row">
       <div class="col-sm-5 col-sm-offset-1"><sm class="copyright">&copy;2015 copyright Sean Gervais</sm></div>
-      <div class="col-sm-5 col-sm-offset-1"><sm class="download">Download source</sm></div>
+      <div class="col-sm-5 col-sm-offset-1"><sm class="download"><a href="word-count.zip">Download source</a></sm></div>
     </div>
   </footer>
 
@@ -106,13 +106,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
   <script>
     //normally this would go into included JS file
-
-    var MIN_WORD_SIZE = 0;
-    var MAX_NUM_WORDS = 25;
-
     (function(){
       "use strict";
 
+      var MIN_WORD_SIZE = 0;
+      var MAX_NUM_WORDS = 20;
 
       function setup() {
         d3.select("#count-button").on('click', handleCountClick)
@@ -191,7 +189,7 @@
         var wordKeys = getWordKeys(wordList);
         var data = flatten(wordKeys);
 
-        var diameter = 960, format = d3.format(",d"), color = d3.scale.category20c();
+        var diameter = 960, format = d3.format(",d"), color = d3.scale.category20();
         var bubble = d3.layout.pack()
             .sort(null)
             .size([diameter, diameter])
@@ -218,12 +216,9 @@
             .text(function(d) { return d.className.substring(0, d.r / 3); });
       }
 
-
-
       setup();
-    })()
 
-
+    })();
 
   </script>
 
